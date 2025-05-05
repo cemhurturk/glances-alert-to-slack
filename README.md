@@ -29,7 +29,7 @@ sudo apt install -y glances jq bc curl
 1. **Download the script**:
 
 ```bash
-curl -o /usr/local/bin/glances-alert.sh https://raw.githubusercontent.com/YOUR_USERNAME/glances-alert-to-slack/main/glances-alert.sh
+curl -o /usr/local/bin/glances-alert.sh https://raw.githubusercontent.com/cemhurturk/glances-alert-to-slack/refs/heads/main/glances-alert.sh
 chmod +x /usr/local/bin/glances-alert.sh
 ```
 
