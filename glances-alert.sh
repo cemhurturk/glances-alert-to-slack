@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # CONFIGURATION
+CHECK_CPU=1
+CHECK_MEM=1
+CHECK_DISK=1
 SLACK_WEBHOOK_URL="https://hooks.slack.com/services/XXX/YYY/ZZZ"
-CPU_THRESHOLD=80
+CPU_THRESHOLD=90
 MEM_THRESHOLD=80
 DISK_THRESHOLD=80
 ALERT_COOLDOWN_MINUTES=10
@@ -43,15 +46,15 @@ fi
 
 # Build alert message
 ALERT_MSG=""
-if (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
+if [ "$CHECK_CPU" -eq 1 ] && (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
     ALERT_MSG+="⚠️ *High CPU usage*: ${CPU_USAGE}%\n"
     log "CPU usage exceeded threshold"
 fi
-if (( $(echo "$MEM_USAGE > $MEM_THRESHOLD" | bc -l) )); then
+if [ "$CHECK_MEM" -eq 1 ] && (( $(echo "$MEM_USAGE > $MEM_THRESHOLD" | bc -l) )); then
     ALERT_MSG+="⚠️ *High Memory usage*: ${MEM_USAGE}%\n"
     log "Memory usage exceeded threshold"
 fi
-if (( $(echo "$DISK_USAGE > $DISK_THRESHOLD" | bc -l) )); then
+if [ "$CHECK_DISK" -eq 1 ] && (( $(echo "$DISK_USAGE > $DISK_THRESHOLD" | bc -l) )); then
     ALERT_MSG+="⚠️ *High Disk usage*: ${DISK_USAGE}%\n"
     log "Disk usage exceeded threshold"
 fi
