@@ -13,24 +13,35 @@ STATE_FILE="/tmp/glances-alert.last"
 LOG_FILE="/tmp/glances-alert.log"
 HOSTNAME=$(hostname)
 
+# CPU measurement window in seconds (increase for more stable readings)
+CPU_MEASURE_SECONDS=5
+
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') | $1" >> "$LOG_FILE"
 }
 
 log "Starting glances-alert.sh script"
 
-# Run Glances and get output - cpu.total gives the average across all cores
-RAW_OUTPUT=$(timeout 2 glances --stdout cpu.total,mem,fs)
+# Run Glances for longer period to get averaged CPU usage
+# The last reading from glances will be the average over the time period
+RAW_OUTPUT=$(timeout $CPU_MEASURE_SECONDS glances --stdout cpu.total,mem,fs --time 1 2>/dev/null | tail -n 3)
+
+# If timeout doesn't give us output, fall back to single reading
+if [ -z "$RAW_OUTPUT" ]; then
+    log "Falling back to single glances reading"
+    RAW_OUTPUT=$(timeout 2 glances --stdout cpu.total,mem,fs)
+fi
+
 log "Raw glances output:"
 log "$RAW_OUTPUT"
 
 # Extract CPU usage - looking specifically for the cpu.total line
-CPU_USAGE=$(echo "$RAW_OUTPUT" | grep "^cpu.total:" | awk '{print $2}')
+CPU_USAGE=$(echo "$RAW_OUTPUT" | grep "cpu.total:" | tail -1 | awk '{print $2}')
 
 # If that doesn't work, try alternative parsing
 if [ -z "$CPU_USAGE" ] || ! [[ "$CPU_USAGE" =~ ^[0-9.]+$ ]]; then
     # Look for the pattern "cpu.total: <number>"
-    CPU_USAGE=$(echo "$RAW_OUTPUT" | sed -n 's/^cpu\.total: \([0-9.]*\)/\1/p')
+    CPU_USAGE=$(echo "$RAW_OUTPUT" | sed -n 's/^cpu\.total: \([0-9.]*\)/\1/p' | tail -1)
 fi
 
 # Extract memory usage - look for percent within mem section
@@ -40,7 +51,7 @@ MEM_USAGE=$(echo "$RAW_OUTPUT" | sed -n "/^mem:/,/^[a-z]/s/.*'percent': \([0-9.]
 DISK_USAGE=$(echo "$RAW_OUTPUT" | sed -n "/^fs:/,/^[a-z]/s/.*'percent': \([0-9.]*\).*/\1/p" | head -n1)
 
 log "Parsed values:"
-log "CPU_USAGE=$CPU_USAGE%"
+log "CPU_USAGE=$CPU_USAGE% (${CPU_MEASURE_SECONDS}-second measurement)"
 log "MEM_USAGE=$MEM_USAGE%"
 log "DISK_USAGE=$DISK_USAGE%"
 
