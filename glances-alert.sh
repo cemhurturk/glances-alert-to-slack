@@ -29,7 +29,7 @@ LOCK_FILE="/tmp/glances-alert.lock"
 HOSTNAME=$(hostname)
 
 CPU_MEASURE_SECONDS=5
-GLANCES_KILL_AFTER_SECONDS=2
+GLANCES_KILL_AFTER_SECONDS=3
 
 # ---------- HELPERS ------------------------------------------------------
 
@@ -66,14 +66,14 @@ log "Starting glances-alert.sh script"
 # ---------- SAMPLE GLANCES ----------------------------------------------
 
 timeout --kill-after="${GLANCES_KILL_AFTER_SECONDS}s" "${CPU_MEASURE_SECONDS}s" \
-    glances --stdout cpu.total,mem,fs --time 1 \
+    glances --stdout cpu.total,mem,fs --time 1 --stop-after "${CPU_MEASURE_SECONDS}" \
     > "$TMP_OUT" 2>/dev/null
 GLANCES_RC=$?
 
 if [ ! -s "$TMP_OUT" ]; then
     log "Primary glances reading produced no output (rc=$GLANCES_RC), trying fallback"
     timeout --kill-after="${GLANCES_KILL_AFTER_SECONDS}s" 2s \
-        glances --stdout cpu.total,mem,fs \
+        glances --stdout cpu.total,mem,fs --stop-after 2 \
         > "$TMP_OUT" 2>/dev/null
 fi
 
