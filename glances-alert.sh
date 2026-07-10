@@ -63,17 +63,26 @@ fi
 
 log "Starting glances-alert.sh script"
 
+# ---------- FEATURE-DETECT --stop-after ---------------------------------
+
+STOP_AFTER_PRIMARY=()
+STOP_AFTER_FALLBACK=()
+if glances --help 2>&1 | grep -q -- '--stop-after'; then
+    STOP_AFTER_PRIMARY=(--stop-after "${CPU_MEASURE_SECONDS}")
+    STOP_AFTER_FALLBACK=(--stop-after 2)
+fi
+
 # ---------- SAMPLE GLANCES ----------------------------------------------
 
 timeout --kill-after="${GLANCES_KILL_AFTER_SECONDS}s" "${CPU_MEASURE_SECONDS}s" \
-    glances --stdout cpu.total,mem,fs --time 1 --stop-after "${CPU_MEASURE_SECONDS}" \
+    glances --stdout cpu.total,mem,fs --time 1 "${STOP_AFTER_PRIMARY[@]+"${STOP_AFTER_PRIMARY[@]}"}" \
     > "$TMP_OUT" 2>/dev/null
 GLANCES_RC=$?
 
 if [ ! -s "$TMP_OUT" ]; then
     log "Primary glances reading produced no output (rc=$GLANCES_RC), trying fallback"
     timeout --kill-after="${GLANCES_KILL_AFTER_SECONDS}s" 2s \
-        glances --stdout cpu.total,mem,fs --stop-after 2 \
+        glances --stdout cpu.total,mem,fs "${STOP_AFTER_FALLBACK[@]+"${STOP_AFTER_FALLBACK[@]}"}" \
         > "$TMP_OUT" 2>/dev/null
 fi
 
